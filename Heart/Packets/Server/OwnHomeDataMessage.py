@@ -482,10 +482,7 @@ class OwnHomeDataMessage(PiranhaMessage):
 
         self.writeDataReference(5, 21)
         self.writeVInt(-1)
-        if player.UnlockingBrawler == 0:
-            self.writeVInt(player.RareTokens)
-        else:
-            self.writeVInt(0)
+        self.writeVInt(149100)
 
         self.writeDataReference(5, 23)
         self.writeVInt(-1)
