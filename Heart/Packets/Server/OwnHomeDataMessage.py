@@ -1,5 +1,11 @@
 from Heart.Record.ByteStreamHelper import ByteStreamHelper
 from Heart.Packets.PiranhaMessage import PiranhaMessage
+from datetime import datetime
+from DB.DatabaseHandler import DatabaseHandler
+
+import json
+import time
+import random
 
 class OwnHomeDataMessage(PiranhaMessage):
     def __init__(self, messageData):
@@ -7,15 +13,18 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.messageVersion = 0
 
     def encode(self, fields, player):
+        db_instance = DatabaseHandler()
+        playerData = db_instance.getPlayer(player.ID)
+
         self.writeVInt(1688816070)
         self.writeVInt(1191532375)
         self.writeVInt(2023189)
         self.writeVInt(73530)
 
-        self.writeVInt(player.Trophies)
-        self.writeVInt(player.HighestTrophies)
-        self.writeVInt(player.HighestTrophies) 
-        self.writeVInt(player.TrophyRoadTier)
+        self.writeVInt(player.Trophies + 5000)
+        self.writeVInt(player.HighestTrophies + 5000)
+        self.writeVInt(player.HighestTrophies + 5000) 
+        self.writeVInt(player.TrophyRoadTier + 200)
         self.writeVInt(player.Experience)
         self.writeDataReference(28, player.Thumbnail)
         self.writeDataReference(43, player.Namecolor)
@@ -24,7 +33,9 @@ class OwnHomeDataMessage(PiranhaMessage):
         for x in range(26):
             self.writeVInt(x)
 
-        self.writeVInt(0)
+        self.writeVInt(len(player.SelectedSkins))
+        for brawlerID in player.SelectedSkins:
+            self.writeDataReference(29, player.SelectedSkins[str(brawlerID)])
 
         self.writeVInt(0)
 
@@ -79,7 +90,7 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeVInt(0)
         self.writeBoolean(False) # Daily Offer
         self.writeVInt(0) # Old price
-        self.writeString("Offer") # Text
+        self.writeString("BSDS V57") # Text
         self.writeVInt(0)
         self.writeBoolean(False)
         self.writeString("offer_bgr_sushi") # Background
@@ -126,45 +137,93 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeString(player.Region) # location
         self.writeString(player.ContentCreator) # supported creator
 
-        self.writeVInt(6) 
-        self.writeVInt(1) 
-        self.writeVInt(9) 
-        self.writeVInt(1) 
-        self.writeVInt(22) 
-        self.writeVInt(3) 
-        self.writeVInt(25) 
-        self.writeVInt(1) 
-        self.writeVInt(24) 
-        self.writeVInt(0)
-        self.writeVInt(15)
-        self.writeVInt(32447)
-        self.writeVInt(28)
+        self.writeVInt(21)
+        self.writeDataReference(2, 1)  # Unknown
+        self.writeDataReference(3, 0)  # Tokens Gained
+        self.writeDataReference(4, 0)  # Trophies Gained
+        self.writeDataReference(6, 0)  # Demo Account
+        self.writeDataReference(7, 0)  # Invites Blocked
+        self.writeDataReference(8, 0)  # Star Points Gained
+        self.writeDataReference(9, 1)  # Show Star Points
+        self.writeDataReference(10, 0)  # Power Play Trophies Gained
+        self.writeDataReference(12, 1)  # Unknown
+        self.writeDataReference(14, 0)  # Coins Gained
+        self.writeDataReference(15, 1)  # AgeScreen | 3 = underage (disable social media) | 1 = age popup
+        self.writeDataReference(16, 1)
+        self.writeDataReference(17, 0)  # Team Chat Muted
+        self.writeDataReference(18, 1)  # Esport Button
+        self.writeDataReference(19, 0)  # Champion Ship Lives Buy Popup
+        self.writeDataReference(20, 0)  # Gems Gained
+        self.writeDataReference(21, 1)  # Looking For Team State
+        self.writeDataReference(22, 1)
+        self.writeDataReference(23, 0)  # Club Trophies Gained
+        self.writeDataReference(24, 1)  # Have already watched club league stupid animation
+        self.writeDataReference(32447, 28)
 
         self.writeVInt(0)
 
+        Free32LVL = 0
+        Free64LVL = 0
+        Free96LVL = 0
+
+        Pass32LVL = 0
+        Pass64LVL = 0
+        Pass96LVL = 0
+
+        for LVL in player.BrawlPassFreeLevel:
+            if LVL < 30:
+                Free32LVL += (2**(LVL + 2))
+            if LVL > 30:
+                Free64LVL += (2**(LVL-30))
+            if LVL > 61:
+                Free96LVL += (1**(LVL-61))
+        
+        for LVL in player.BrawlPassLevel:
+            if LVL < 30:
+                Pass32LVL += (2**(LVL + 2))
+            if LVL > 29:
+                Pass64LVL += (2**(LVL-30))
+            if LVL > 60:
+                Pass96LVL += (1**(LVL-61))
+        
+        if player.BrawlPassBuy == 0:
+            BrawlPassActive = False
+            BrawlPassPlusActive = False
+        if player.BrawlPassBuy == 1:
+            BrawlPassActive = True
+            BrawlPassPlusActive = False
+        if player.BrawlPassBuy == 2:
+            BrawlPassActive = True
+            BrawlPassPlusActive = True
+
+        # BrawlPassSeasonData::encode
         self.writeVInt(1)
         for season in range(1):
-            self.writeVInt(30 - 1)
-            self.writeVInt(40000)
-            self.writeBoolean(True)
+            self.writeVInt(29)
+            self.writeVInt(0)
+            self.writeBoolean(True) # BrawlPass buy
             self.writeVInt(0)
             self.writeBoolean(False)
+
+            self.writeBoolean(True)
+            self.writeInt(Pass32LVL)
+            self.writeInt(Pass64LVL)
+            self.writeInt(Pass96LVL)
+            self.writeInt(0)
+
+            self.writeBoolean(True)
+            self.writeInt(Free32LVL)
+            self.writeInt(Free64LVL)
+            self.writeInt(Free96LVL)
+            self.writeInt(0)
+
+            self.writeBoolean(True) # BrawlPass + Buy
             self.writeBoolean(True)
             self.writeInt(0)
             self.writeInt(0)
             self.writeInt(0)
             self.writeInt(0)
-            self.writeBoolean(True)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeBoolean(True)
-            self.writeBoolean(True)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(0)
-            self.writeInt(0)
+        # BrawlPassSeasonData::encode
 
         self.writeBoolean(True)
         self.writeVInt(0)
@@ -173,14 +232,15 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeVInt(0) 
 
         self.writeBoolean(True) # Vanity items
-        self.writeVInt(len(player.OwnedThumbnails)+len(player.OwnedPins))
-        for x in player.OwnedThumbnails:
-            self.writeVInt(28)
-            self.writeVInt(x)
+        self.writeVInt(len(player.OwnedThumbnails) + len(player.OwnedPins) + 1)
+        for ThumbnailID in player.OwnedThumbnails:
+            self.writeDataReference(28, ThumbnailID)
             self.writeVInt(0)
-        for x in player.OwnedPins:
-            self.writeVInt(52)
-            self.writeVInt(x)
+        for PinID in player.OwnedPins:
+            self.writeDataReference(52, PinID)
+            self.writeVInt(0)
+        for i in range(1):
+            self.writeDataReference(28, 186) # IconCreator
             self.writeVInt(0)
 
 
@@ -188,7 +248,7 @@ class OwnHomeDataMessage(PiranhaMessage):
 
         self.writeInt(0)
         self.writeVInt(0)
-        self.writeDataReference(16, 85)
+        self.writeDataReference(16, 82) # favoriteBrawler
         self.writeBoolean(False)
         self.writeVInt(0)
         self.writeVInt(0)
@@ -274,22 +334,74 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeBoolean(False) 
         self.writeBoolean(False) 
 
+
         self.writeVInt(0)
        
         ByteStreamHelper.encodeIntList(self, [20, 35, 75, 140, 290, 480, 800, 1250, 1875, 2800])
         ByteStreamHelper.encodeIntList(self, [30, 80, 170, 360]) # Shop Coins Price
         ByteStreamHelper.encodeIntList(self, [300, 880, 2040, 4680]) # Shop Coins Amount
 
+        # ReleaseEntry::encode
         self.writeVInt(0) 
+        # ReleaseEntry::encode
 
+        # IntValueEntry::encode
         self.writeVInt(1)
-        self.writeVInt(41000108) # theme
-        self.writeVInt(1)
+        for i in range(1):
+            self.writeDataReference(41000108, 1) # ThemeID
+        # IntValueEntry::encode end
 
+        # TimedIntValueEntry::encode
         self.writeVInt(0) 
+        # TimedIntValueEntry::encode end
+        # CustomEvent::encode
+        self.writeVInt(1)
+        for i in range(1):
+            self.writeVInt(1)
+            self.writeVInt(1)
+            for i in range(3):
+                self.writeString('ss')
+                self.writeVInt(0)
+            self.writeVInt(1)
+        # CustomEvent::encode end
         self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeVInt(0)
+        for i in range(0):
+            self.writeDataReference(16, 1)
+            self.writeString('fimos')
+            self.writeDataReference(16, 2)
+            self.writeVInt(0)
+            self.writeBoolean(True)
+            for i in range(1):
+                self.writeString('penis')
+                self.writeVInt(0)
+            self.writeBoolean(True)
+            for i in range(1):
+                self.writeString('penis 1488')
+                self.writeVInt(0)
+            self.writeVInt(0)
+
+            self.writeBoolean(False)
+            self.writeVInt(1)
+            self.writeString('pesok')
+        self.writeVInt(1)
+        for i in range(1):
+            self.writeVInt(3)
+            self.writeVInt(3)
+            self.writeString('pie')
+            self.writeString('lol')
+            self.writeVInt(3)
+            self.writeVInt(1)
+            for i in range(1):
+                self.writeBoolean(True)
+                self.writeVInt(16)
+                self.writeVInt(1)
+                self.writeDataReference(0, 0)
+                self.writeVInt(0)
+            self.writeBoolean(True)
+            self.writeString('string')
+            self.writeVInt(0)
+            self.writeDataReference(89, 3)
+            self.writeVInt(3)
         self.writeVInt(0)
 
         self.writeVInt(2)
@@ -318,12 +430,17 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeBoolean(False)
         self.writeBoolean(False)
         self.writeVInt(0)
+
         self.writeBoolean(True) # Starr Road
         for i in range(7):
             self.writeVInt(0)
 
-        self.writeVInt(0) # Mastery
-
+        self.writeVInt(len(player.OwnedBrawlers)) # Mastery
+        for brawlerID,brawlerData in player.OwnedBrawlers.items():
+            self.writeVInt(24800) #Mastery Points
+            self.writeVInt(0) #Claimed Rewards
+            self.writeDataReference(16, brawlerID) #brawlers
+            
         #BattleCard
         self.writeVInt(0)
         self.writeVInt(0)
@@ -336,25 +453,6 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeBoolean(False)
 
         self.writeVInt(0) #Brawler's BattleCards
-
-        self.writeVInt(14)
-        for i in range(14):
-            self.writeDataReference(80, i)
-            self.writeVInt(-1)
-            self.writeVInt(0)
-
-        self.writeVInt(0)
-        self.writeInt(-1435281534)
-        self.writeVInt(0) 
-        self.writeVInt(0)
-        self.writeVInt(86400*24)
-        self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeVInt(0)
-        self.writeBoolean(False)
 
         self.writeBoolean(False)
         self.writeBoolean(False)
@@ -384,7 +482,10 @@ class OwnHomeDataMessage(PiranhaMessage):
 
         self.writeDataReference(5, 21)
         self.writeVInt(-1)
-        self.writeVInt(149100)
+        if player.UnlockingBrawler == 0:
+            self.writeVInt(player.RareTokens)
+        else:
+            self.writeVInt(0)
 
         self.writeDataReference(5, 23)
         self.writeVInt(-1)
@@ -400,7 +501,7 @@ class OwnHomeDataMessage(PiranhaMessage):
         for x,i in player.OwnedBrawlers.items():
             self.writeDataReference(16, x)
             self.writeVInt(-1)
-            self.writeVInt(i["HighestTrophies"])
+            self.writeVInt(i["HighestTrophies"] + 1250)
 
         self.writeVInt(0) # Array
 
