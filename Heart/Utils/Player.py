@@ -12,8 +12,8 @@ class Player:
     Registered = False
     Thumbnail = 0
     Namecolor = 0
-    Region = "RU"
-    ContentCreator = "BSL-V57"
+    Region = "EN"
+    ContentCreator = "BSDS-V57" # dont look at commit :skull:
 
     Coins = 99999
     Gems = 99999
