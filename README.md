@@ -40,7 +40,7 @@ Discord link : https://discord.gg/mt4dUxXryh
 
 6: Compile the apk with the changes and install it, and enjoy playing bsds brawl!
 
-[Screenshot of the menu](https://raw.githubusercontent.com/soufgameyt/BSDS-V57/refs/heads/main/menu.png)
+![Sceenshot of the menu](https://github.com/user-attachments/assets/22c744e1-791b-4ea5-87db-84c44a65b48c)
 ## credits ##
 gene brawl : for the promon bypassed client
 [Risporce](https://github.com/Risporce) for his readme
