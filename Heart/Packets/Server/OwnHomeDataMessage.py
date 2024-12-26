@@ -1,5 +1,6 @@
 from Heart.Record.ByteStreamHelper import ByteStreamHelper
 from Heart.Packets.PiranhaMessage import PiranhaMessage
+from DB.DatabaseHandler import DatabaseHandler
 
 class OwnHomeDataMessage(PiranhaMessage):
     def __init__(self, messageData):
@@ -7,6 +8,8 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.messageVersion = 0
 
     def encode(self, fields, player):
+        db_instance = DatabaseHandler()
+        playerData = db_instance.getPlayer(player.ID)
         # LogicClientHome::encode
         # LogicDailyData::encode
         self.writeVInt(1688816070) # timestamp
@@ -189,6 +192,20 @@ class OwnHomeDataMessage(PiranhaMessage):
 
 
         self.writeBoolean(False) # Power league season data
+        # Power League Data Array Start #
+        #self.writeVInt(1) # Season
+        #self.writeVInt(10000) # Rank Solo League (Tokens)
+        #self.writeVInt(1) # Season
+        #self.writeVInt(10000) # Rank Team League (Tokens)
+        #self.writeVInt(0) # Unk
+        #self.writeVInt(10000) # High Rank Solo League (Tokens)
+        #self.writeVInt(0) # Unk
+        #self.writeVInt(10000) # High Rank Team League (Tokens)
+        #self.writeVInt(0) # Unk
+        #self.writeBoolean(True) # ?
+        #self.writeVInt(0) # ?
+        #self.writeVInt(0) # ?
+        # Power League Data Array End #
 
         self.writeInt(0)
         self.writeVInt(0)
@@ -287,18 +304,20 @@ class OwnHomeDataMessage(PiranhaMessage):
         ByteStreamHelper.encodeIntList(self, [300, 880, 2040, 4680]) # Shop Coins Amount
 
         # ReleaseEntry::encode
-        self.writeVInt(1) # Locked Brawler
-        for i in range(1):
-            self.writeDataReference(16, 61)
+        self.writeVInt(0) # Locked Brawler
+        for i in range(0):
+            self.writeDataReference(16, 83)
             self.writeInt(3600) # Time
             self.writeInt(3500)
             self.writeInt(3400)
             self.writeBoolean(True)
         # ReleaseEntry::encode
-
+        
+        # IntValueEntry::encode
         self.writeVInt(1)
         self.writeVInt(41000108) # theme
         self.writeVInt(1)
+        # IntValueEntry::encode end
 
         self.writeVInt(0) 
         self.writeVInt(0)
@@ -325,7 +344,7 @@ class OwnHomeDataMessage(PiranhaMessage):
         
         self.writeVInt(1)
         self.writeBoolean(False)
-        self.writeVInt(0)
+        self.writeVInt(0) # gatcha drop
         self.writeVInt(0) 
         self.writeVInt(0)
         self.writeBoolean(False)
@@ -379,7 +398,7 @@ class OwnHomeDataMessage(PiranhaMessage):
         self.writeBoolean(False) 
         self.writeVInt(0)
 
-        # end LogicClientHome
+        # end LogicClientHome::encode
 
         self.writeVLong(player.ID[0], player.ID[1])
         self.writeVLong(player.ID[0], player.ID[1])
@@ -398,15 +417,15 @@ class OwnHomeDataMessage(PiranhaMessage):
 
         self.writeDataReference(5, 8)
         self.writeVInt(-1)
-        self.writeVInt(player.Coins)
+        self.writeVInt(player.Coins) # coins
 
         self.writeDataReference(5, 21)
         self.writeVInt(-1)
-        self.writeVInt(149100)
+        self.writeVInt(300000) # alien fame 3
 
         self.writeDataReference(5, 23)
         self.writeVInt(-1)
-        self.writeVInt(player.Blings)
+        self.writeVInt(player.Blings) # blings
 
         self.writeVInt(len(player.OwnedBrawlers)) # HeroScore
         for x,i in player.OwnedBrawlers.items():
